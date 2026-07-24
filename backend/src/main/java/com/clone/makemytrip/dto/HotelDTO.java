@@ -12,8 +12,27 @@ public class HotelDTO {
     private String name;
     private String location;
     private String description;
-    private double pricePerNight;
+    private double pricePerNight; // Will represent dynamic price
     private int availableRooms;
     private double rating;
     private String imageUrl;
+
+    private double basePrice;
+    private DynamicPricingResponse pricingDetails;
+
+    // Backwards-compatible constructor
+    public HotelDTO(Long id, String name, String location, String description,
+                    double pricePerNight, int availableRooms, double rating, String imageUrl) {
+        this.id = id;
+        this.name = name;
+        this.location = location;
+        this.description = description;
+        this.pricePerNight = pricePerNight;
+        this.availableRooms = availableRooms;
+        this.rating = rating;
+        this.imageUrl = imageUrl;
+        this.basePrice = pricePerNight;
+        this.pricingDetails = null;
+    }
 }
+

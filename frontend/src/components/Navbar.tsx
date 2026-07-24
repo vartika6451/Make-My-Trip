@@ -39,6 +39,7 @@ export default function Navbar({ darkMode, setDarkMode }: NavbarProps) {
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-6 text-sm font-semibold">
             <Link to="/" className="hover:text-brand-primary transition-colors py-2">Home</Link>
+            <Link to="/flight-status" className="hover:text-brand-primary transition-colors py-2">Flight Status</Link>
             <Link to="/#offers" className="hover:text-brand-primary transition-colors py-2">Offers</Link>
             <Link to="/#destinations" className="hover:text-brand-primary transition-colors py-2">Destinations</Link>
             {user?.role === 'ROLE_ADMIN' && (

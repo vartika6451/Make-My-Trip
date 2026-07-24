@@ -8,7 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/flights")
@@ -61,4 +64,43 @@ public class FlightController {
         flightService.deleteFlight(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/status/{flightNumber}")
+    public ResponseEntity<Map<String, Object>> getFlightStatus(@PathVariable String flightNumber) {
+        Map<String, Object> statusMap = new HashMap<>();
+        statusMap.put("flightNumber", flightNumber);
+        
+        if (flightNumber.equalsIgnoreCase("AI-101")) {
+            statusMap.put("status", "DELAYED");
+            statusMap.put("statusText", "Delayed by 1h 15m");
+            statusMap.put("delayReason", "Late arrival of incoming aircraft due to air traffic control congestion in New Delhi.");
+            statusMap.put("gate", "Gate 14B");
+            statusMap.put("revisedDeparture", LocalDateTime.now().plusHours(1).plusMinutes(15).toString());
+            statusMap.put("estimatedArrival", LocalDateTime.now().plusHours(4).plusMinutes(15).toString());
+        } else if (flightNumber.equalsIgnoreCase("6E-203")) {
+            statusMap.put("status", "BOARDING");
+            statusMap.put("statusText", "Boarding in progress");
+            statusMap.put("delayReason", "On Schedule");
+            statusMap.put("gate", "Gate 3");
+            statusMap.put("revisedDeparture", LocalDateTime.now().plusMinutes(5).toString());
+            statusMap.put("estimatedArrival", LocalDateTime.now().plusHours(2).plusMinutes(35).toString());
+        } else {
+            statusMap.put("status", "ON_TIME");
+            statusMap.put("statusText", "On Time");
+            statusMap.put("delayReason", "On Schedule");
+            statusMap.put("gate", "Gate 5A");
+            statusMap.put("revisedDeparture", LocalDateTime.now().plusHours(2).toString());
+            statusMap.put("estimatedArrival", LocalDateTime.now().plusHours(5).toString());
+        }
+        return ResponseEntity.ok(statusMap);
+    }
+
+    @Autowired
+    private com.clone.makemytrip.repository.PriceHistoryRepository priceHistoryRepository;
+
+    @GetMapping("/{id}/price-history")
+    public ResponseEntity<List<com.clone.makemytrip.model.PriceHistory>> getFlightPriceHistory(@PathVariable Long id) {
+        return ResponseEntity.ok(priceHistoryRepository.findByItemTypeAndItemIdOrderByRecordedAtAsc("FLIGHT", id));
+    }
 }
+

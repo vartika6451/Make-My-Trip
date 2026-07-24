@@ -11,6 +11,7 @@ import BookingFlow from './pages/BookingFlow';
 import Payment from './pages/Payment';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import FlightStatus from './pages/FlightStatus';
 import { useAuthStore } from './store/authStore';
 
 export default function App() {
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="/payment" element={<Payment />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/flight-status" element={<FlightStatus />} />
           </Routes>
         </div>
         <Footer />

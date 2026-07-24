@@ -1,10 +1,12 @@
 package com.clone.makemytrip.service;
 
 import com.clone.makemytrip.dto.FlightDTO;
+import com.clone.makemytrip.dto.DynamicPricingResponse;
 import com.clone.makemytrip.model.Flight;
 import com.clone.makemytrip.repository.FlightRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -74,8 +76,12 @@ public class FlightService {
         return flightRepository.findDistinctDestinations();
     }
 
+    @Autowired
+    private PricingEngineService pricingEngineService;
+
     private FlightDTO convertToDTO(Flight flight) {
-        return new FlightDTO(
+        DynamicPricingResponse dynamicPricing = pricingEngineService.getFlightDynamicPrice(flight);
+        FlightDTO dto = new FlightDTO(
                 flight.getId(),
                 flight.getFlightNumber(),
                 flight.getAirline(),
@@ -83,9 +89,13 @@ public class FlightService {
                 flight.getDestination(),
                 flight.getDepartureTime(),
                 flight.getArrivalTime(),
-                flight.getPrice(),
+                dynamicPricing.getAdjustedPrice(),
                 flight.getTotalSeats(),
                 flight.getAvailableSeats()
         );
+        dto.setBasePrice(dynamicPricing.getOriginalPrice());
+        dto.setPricingDetails(dynamicPricing);
+        return dto;
     }
 }
+

@@ -51,4 +51,13 @@ public class HotelController {
         hotelService.deleteHotel(id);
         return ResponseEntity.noContent().build();
     }
+
+    @Autowired
+    private com.clone.makemytrip.repository.PriceHistoryRepository priceHistoryRepository;
+
+    @GetMapping("/{id}/price-history")
+    public ResponseEntity<List<com.clone.makemytrip.model.PriceHistory>> getHotelPriceHistory(@PathVariable Long id) {
+        return ResponseEntity.ok(priceHistoryRepository.findByItemTypeAndItemIdOrderByRecordedAtAsc("HOTEL", id));
+    }
 }
+

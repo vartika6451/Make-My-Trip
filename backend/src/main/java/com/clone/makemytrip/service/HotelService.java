@@ -1,10 +1,12 @@
 package com.clone.makemytrip.service;
 
 import com.clone.makemytrip.dto.HotelDTO;
+import com.clone.makemytrip.dto.DynamicPricingResponse;
 import com.clone.makemytrip.model.Hotel;
 import com.clone.makemytrip.repository.HotelRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -64,16 +66,25 @@ public class HotelService {
         return hotelRepository.findDistinctLocations();
     }
 
+    @Autowired
+    private PricingEngineService pricingEngineService;
+
     private HotelDTO convertToDTO(Hotel hotel) {
-        return new HotelDTO(
+        java.time.LocalDate checkInDate = java.time.LocalDate.now().plusDays(1);
+        DynamicPricingResponse dynamicPricing = pricingEngineService.getHotelDynamicPrice(hotel, checkInDate);
+        HotelDTO dto = new HotelDTO(
                 hotel.getId(),
                 hotel.getName(),
                 hotel.getLocation(),
                 hotel.getDescription(),
-                hotel.getPricePerNight(),
+                dynamicPricing.getAdjustedPrice(),
                 hotel.getAvailableRooms(),
                 hotel.getRating(),
                 hotel.getImageUrl()
         );
+        dto.setBasePrice(dynamicPricing.getOriginalPrice());
+        dto.setPricingDetails(dynamicPricing);
+        return dto;
     }
 }
+
