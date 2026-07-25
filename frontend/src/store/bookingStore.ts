@@ -1,6 +1,24 @@
 import { create } from 'zustand';
 import api from '../utils/api';
 
+export interface DynamicPricingDetails {
+  originalPrice: number;
+  adjustedPrice: number;
+  demandSurcharge: number;
+  seasonalitySurcharge: number;
+  weekendSurcharge: number;
+  lastMinuteSurcharge: number;
+  explanation: string[];
+}
+
+export interface PriceHistory {
+  id: number;
+  itemType: 'FLIGHT' | 'HOTEL';
+  itemId: number;
+  price: number;
+  recordedAt: string;
+}
+
 export interface Flight {
   id: number;
   flightNumber: string;
@@ -12,6 +30,8 @@ export interface Flight {
   price: number;
   totalSeats: number;
   availableSeats: number;
+  basePrice?: number;
+  pricingDetails?: DynamicPricingDetails;
 }
 
 export interface Hotel {
@@ -23,6 +43,8 @@ export interface Hotel {
   availableRooms: number;
   rating: number;
   imageUrl: string;
+  basePrice?: number;
+  pricingDetails?: DynamicPricingDetails;
 }
 
 export interface Booking {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useBookingStore } from '../store/bookingStore';
-import { Plane, Star, Filter, ArrowRight, Heart } from 'lucide-react';
+import { Plane, Star, Filter, ArrowRight, Heart, TrendingUp } from 'lucide-react';
+import PriceTrendsAndBreakdown from '../components/PriceTrendsAndBreakdown';
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -16,6 +17,9 @@ export default function SearchResults() {
 
   const [sortBy, setSortBy] = useState<'price' | 'rating'>('price');
   const [priceLimit, setPriceLimit] = useState(50000);
+  
+  const [expandedFlightId, setExpandedFlightId] = useState<number | null>(null);
+  const [expandedHotelId, setExpandedHotelId] = useState<number | null>(null);
 
   useEffect(() => {
     if (type === 'flight') {
@@ -158,58 +162,76 @@ export default function SearchResults() {
                 getSortedFlights().map((flight) => (
                   <div
                     key={flight.id}
-                    className="glass rounded-3xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col md:flex-row justify-between items-center gap-6"
+                    className="glass rounded-3xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col gap-6"
                   >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="p-3 bg-blue-50 dark:bg-slate-800 rounded-full text-brand-primary">
-                        <Plane size={24} />
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-6 w-full">
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="p-3 bg-blue-50 dark:bg-slate-800 rounded-full text-brand-primary">
+                          <Plane size={24} />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-brand-primary">{flight.airline}</span>
+                          <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100">{flight.flightNumber}</h4>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-xs font-bold text-brand-primary">{flight.airline}</span>
-                        <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100">{flight.flightNumber}</h4>
+
+                      <div className="flex items-center gap-8 text-center">
+                        <div>
+                          <span className="text-base font-black">{flight.departureTime.split('T')[1].substring(0, 5)}</span>
+                          <p className="text-[10px] text-slate-500 font-bold uppercase">{flight.origin}</p>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <span className="text-[10px] font-bold text-slate-400">Non-stop</span>
+                          <ArrowRight size={14} className="text-slate-300 my-1" />
+                          <span className="text-[10px] font-bold text-brand-secondary">Premium Class</span>
+                        </div>
+                        <div>
+                          <span className="text-base font-black">{flight.arrivalTime.split('T')[1].substring(0, 5)}</span>
+                          <p className="text-[10px] text-slate-500 font-bold uppercase">{flight.destination}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+                        <div className="md:text-right">
+                          <span className="text-2xl font-black text-brand-accent">₹{flight.price.toLocaleString()}</span>
+                          <p className="text-[10px] text-slate-500 font-bold">Includes bags & meals</p>
+                          <button
+                            onClick={() => setExpandedFlightId(expandedFlightId === flight.id ? null : flight.id)}
+                            className="text-[10px] text-brand-primary hover:text-blue-700 dark:hover:text-blue-400 font-black flex items-center gap-1 cursor-pointer mt-1 justify-end md:ml-auto w-full"
+                          >
+                            <TrendingUp size={11} className="text-brand-secondary animate-pulse" />
+                            {expandedFlightId === flight.id ? 'Hide Price Info' : 'Price Trends & Surcharges'}
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleWishlistToggle(flight)}
+                            className="p-2.5 rounded-full bg-slate-100 dark:bg-slate-800 border hover:scale-105 transition-transform"
+                          >
+                            <Heart
+                              size={18}
+                              className={isItemInWishlist(flight.id) ? 'fill-red-500 text-red-500' : 'text-slate-400'}
+                            />
+                          </button>
+                          <button
+                            onClick={() => navigate(`/booking-flow?type=flight&id=${flight.id}`)}
+                            className="bg-brand-primary hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-6 rounded-xl shadow transition-all duration-300"
+                          >
+                            Book Now
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-8 text-center">
-                      <div>
-                        <span className="text-base font-black">{flight.departureTime.split('T')[1].substring(0, 5)}</span>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase">{flight.origin}</p>
-                      </div>
-                      <div className="flex flex-col items-center">
-                        <span className="text-[10px] font-bold text-slate-400">Non-stop</span>
-                        <ArrowRight size={14} className="text-slate-300 my-1" />
-                        <span className="text-[10px] font-bold text-brand-secondary">Premium Class</span>
-                      </div>
-                      <div>
-                        <span className="text-base font-black">{flight.arrivalTime.split('T')[1].substring(0, 5)}</span>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase">{flight.destination}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
-                      <div className="md:text-right">
-                        <span className="text-2xl font-black text-brand-accent">₹{flight.price.toLocaleString()}</span>
-                        <p className="text-[10px] text-slate-500 font-bold">Includes bags & meals</p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleWishlistToggle(flight)}
-                          className="p-2.5 rounded-full bg-slate-100 dark:bg-slate-800 border hover:scale-105 transition-transform"
-                        >
-                          <Heart
-                            size={18}
-                            className={isItemInWishlist(flight.id) ? 'fill-red-500 text-red-500' : 'text-slate-400'}
-                          />
-                        </button>
-                        <button
-                          onClick={() => navigate(`/booking-flow?type=flight&id=${flight.id}`)}
-                          className="bg-brand-primary hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-6 rounded-xl shadow transition-all duration-300"
-                        >
-                          Book Now
-                        </button>
-                      </div>
-                    </div>
+                    {/* Expandable Pricing Breakdown and Chart */}
+                    {expandedFlightId === flight.id && (
+                      <PriceTrendsAndBreakdown
+                        itemId={flight.id}
+                        itemType="FLIGHT"
+                        pricingDetails={flight.pricingDetails}
+                      />
+                    )}
                   </div>
                 ))}
 
@@ -218,52 +240,72 @@ export default function SearchResults() {
                 getSortedHotels().map((hotel) => (
                   <div
                     key={hotel.id}
-                    className="glass rounded-3xl overflow-hidden border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col md:flex-row"
+                    className="glass rounded-3xl overflow-hidden border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col"
                   >
-                    <img
-                      src={hotel.imageUrl}
-                      alt={hotel.name}
-                      className="w-full md:w-48 h-48 md:h-auto object-cover"
-                    />
-                    <div className="p-6 flex-1 flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-bold text-brand-primary">{hotel.location}</span>
-                          <span className="flex items-center gap-1 text-xs font-black text-amber-500">
-                            <Star size={14} className="fill-amber-500" /> {hotel.rating}
-                          </span>
-                        </div>
-                        <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100">{hotel.name}</h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 leading-relaxed">
-                          {hotel.description}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex flex-col md:flex-row">
+                      <img
+                        src={hotel.imageUrl}
+                        alt={hotel.name}
+                        className="w-full md:w-48 h-48 md:h-auto object-cover"
+                      />
+                      <div className="p-6 flex-1 flex flex-col justify-between">
                         <div>
-                          <span className="text-2xl font-black text-brand-accent">₹{hotel.pricePerNight.toLocaleString()}</span>
-                          <span className="text-[10px] text-slate-500 font-bold block">per night (excl. taxes)</span>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-brand-primary">{hotel.location}</span>
+                            <span className="flex items-center gap-1 text-xs font-black text-amber-500">
+                              <Star size={14} className="fill-amber-500" /> {hotel.rating}
+                            </span>
+                          </div>
+                          <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100">{hotel.name}</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 leading-relaxed">
+                            {hotel.description}
+                          </p>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleWishlistToggle(hotel)}
-                            className="p-2.5 rounded-full bg-slate-100 dark:bg-slate-800 border hover:scale-105 transition-transform"
-                          >
-                            <Heart
-                              size={18}
-                              className={isItemInWishlist(hotel.id) ? 'fill-red-500 text-red-500' : 'text-slate-400'}
-                            />
-                          </button>
-                          <button
-                            onClick={() => navigate(`/booking-flow?type=hotel&id=${hotel.id}`)}
-                            className="bg-brand-primary hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-6 rounded-xl shadow transition-all duration-300"
-                          >
-                            Book Stay
-                          </button>
+                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                          <div>
+                            <span className="text-2xl font-black text-brand-accent">₹{hotel.pricePerNight.toLocaleString()}</span>
+                            <span className="text-[10px] text-slate-500 font-bold block">per night (excl. taxes)</span>
+                            <button
+                              onClick={() => setExpandedHotelId(expandedHotelId === hotel.id ? null : hotel.id)}
+                              className="text-[10px] text-brand-primary hover:text-blue-700 dark:hover:text-blue-400 font-black flex items-center gap-1 cursor-pointer mt-1 text-left"
+                            >
+                              <TrendingUp size={11} className="text-brand-secondary animate-pulse" />
+                              {expandedHotelId === hotel.id ? 'Hide Price Info' : 'Price Trends & Surcharges'}
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleWishlistToggle(hotel)}
+                              className="p-2.5 rounded-full bg-slate-100 dark:bg-slate-800 border hover:scale-105 transition-transform"
+                            >
+                              <Heart
+                                size={18}
+                                className={isItemInWishlist(hotel.id) ? 'fill-red-500 text-red-500' : 'text-slate-400'}
+                              />
+                            </button>
+                            <button
+                              onClick={() => navigate(`/booking-flow?type=hotel&id=${hotel.id}`)}
+                              className="bg-brand-primary hover:bg-blue-700 text-white text-xs font-bold py-2.5 px-6 rounded-xl shadow transition-all duration-300"
+                            >
+                              Book Stay
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
+
+                    {/* Expandable Pricing Breakdown and Chart */}
+                    {expandedHotelId === hotel.id && (
+                      <div className="px-6 pb-6 border-t border-slate-100 dark:border-slate-800/80">
+                        <PriceTrendsAndBreakdown
+                          itemId={hotel.id}
+                          itemType="HOTEL"
+                          pricingDetails={hotel.pricingDetails}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
 

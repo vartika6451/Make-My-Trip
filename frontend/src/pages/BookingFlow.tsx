@@ -205,10 +205,43 @@ export default function BookingFlow() {
             <h3 className="text-base font-bold border-b border-slate-200 dark:border-slate-700 pb-3">Price Breakup</h3>
             
             <div className="space-y-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
-              <div className="flex justify-between">
-                <span>Base Price:</span>
-                <span>₹{basePrice.toLocaleString()}</span>
-              </div>
+              {item.pricingDetails ? (
+                <>
+                  <div className="flex justify-between">
+                    <span>Base Ticket Fare:</span>
+                    <span className="text-slate-800 dark:text-slate-200">₹{item.pricingDetails.originalPrice.toLocaleString()}</span>
+                  </div>
+                  {item.pricingDetails.demandSurcharge > 0 && (
+                    <div className="flex justify-between text-amber-600 dark:text-amber-400">
+                      <span>Demand Surcharge:</span>
+                      <span>+ ₹{item.pricingDetails.demandSurcharge.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {item.pricingDetails.seasonalitySurcharge > 0 && (
+                    <div className="flex justify-between text-amber-600 dark:text-amber-400">
+                      <span>Seasonality Surcharge:</span>
+                      <span>+ ₹{item.pricingDetails.seasonalitySurcharge.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {item.pricingDetails.weekendSurcharge > 0 && (
+                    <div className="flex justify-between text-amber-600 dark:text-amber-400">
+                      <span>Weekend Surcharge:</span>
+                      <span>+ ₹{item.pricingDetails.weekendSurcharge.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {item.pricingDetails.lastMinuteSurcharge > 0 && (
+                    <div className="flex justify-between text-amber-600 dark:text-amber-400">
+                      <span>Last-Minute Surcharge:</span>
+                      <span>+ ₹{item.pricingDetails.lastMinuteSurcharge.toLocaleString()}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex justify-between">
+                  <span>Base Price:</span>
+                  <span>₹{basePrice.toLocaleString()}</span>
+                </div>
+              )}
               {discountAmount > 0 && (
                 <div className="flex justify-between text-brand-secondary">
                   <span>Promo Discount:</span>
