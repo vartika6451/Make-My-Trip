@@ -34,14 +34,58 @@ export default function Dashboard() {
     alert(`Successfully added ₹${val} to your VayuWallet!`);
   };
 
-  const handleCancel = async (id: number) => {
-    if (window.confirm('Are you sure you want to cancel this booking? A 100% refund will be credited back to your VayuWallet immediately.')) {
-      const ok = await cancelBooking(id);
-      if (ok) {
-        alert('Booking cancelled successfully and funds refunded!');
-        fetchProfile(); // reload wallet balance
-      }
+  const [selectedBookingForCancel, setSelectedBookingForCancel] = useState<any | null>(null);
+  const [cancelReason, setCancelReason] = useState('Change of plans');
+  const [otherReason, setOtherReason] = useState('');
+
+  const handleCancelClick = (booking: any) => {
+    setSelectedBookingForCancel(booking);
+    setCancelReason('Change of plans');
+    setOtherReason('');
+  };
+
+  const confirmCancellation = async () => {
+    if (!selectedBookingForCancel) return;
+
+    const reasonToSend = cancelReason === 'Other'
+      ? `Other: ${otherReason.trim() || 'Not specified'}`
+      : cancelReason;
+
+    const ok = await cancelBooking(selectedBookingForCancel.id, reasonToSend);
+    if (ok) {
+      setSelectedBookingForCancel(null);
+      fetchProfile(); // reload wallet balance
     }
+  };
+
+  const getRefundEstimation = (booking: any) => {
+    if (!booking.reservationDate) return { percentage: 100, amount: booking.totalPrice, details: '100% Refund (No reservation date specified)' };
+
+    const resTime = new Date(booking.reservationDate).getTime();
+    const nowTime = Date.now();
+
+    if (nowTime > resTime) {
+      return {
+        percentage: 0,
+        amount: 0,
+        details: '0% Refund (Reservation starts/started in the past)'
+      };
+    }
+
+    const hoursRemaining = (resTime - nowTime) / (1000 * 60 * 60);
+    if (hoursRemaining < 24) {
+      return {
+        percentage: 50,
+        amount: booking.totalPrice * 0.5,
+        details: '50% Partial Refund (Cancelled within 24 hours of reservation)'
+      };
+    }
+
+    return {
+      percentage: 100,
+      amount: booking.totalPrice,
+      details: '100% Full Refund (Cancelled more than 24 hours before reservation)'
+    };
   };
 
   return (
@@ -126,7 +170,22 @@ export default function Dashboard() {
                     </span>
                     <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100">{booking.bookingType} Selection</h4>
                     <p className="text-xs text-slate-500 font-semibold mt-1 leading-normal">{booking.details}</p>
+                    {booking.reservationDate && (
+                      <span className="text-[10px] text-brand-primary font-bold block mt-1">
+                        Reservation Starts: {new Date(booking.reservationDate).toLocaleString()}
+                      </span>
+                    )}
                     <span className="text-[10px] text-slate-400 font-bold block mt-2">Booked on: {new Date(booking.bookingDate).toLocaleString()}</span>
+                    
+                    {booking.status === 'CANCELLED' && (
+                      <div className="mt-4 p-3 bg-red-50/50 dark:bg-red-950/10 rounded-2xl border border-red-100/50 dark:border-red-950/30 text-[11px] font-semibold space-y-1 text-red-700 dark:text-red-400 max-w-[400px]">
+                        <div>Cancellation Reason: <span className="text-slate-700 dark:text-slate-300 font-bold">{booking.cancellationReason || 'Not specified'}</span></div>
+                        <div>Refund Credited: <span className="text-slate-700 dark:text-slate-300 font-bold">₹{booking.refundAmount?.toLocaleString() || 0}</span></div>
+                        {booking.cancelledAt && (
+                          <div>Cancelled On: <span className="text-slate-700 dark:text-slate-300 font-bold">{new Date(booking.cancelledAt).toLocaleString()}</span></div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
@@ -136,7 +195,7 @@ export default function Dashboard() {
                     </div>
                     {booking.status === 'CONFIRMED' && (
                       <button
-                        onClick={() => handleCancel(booking.id)}
+                        onClick={() => handleCancelClick(booking)}
                         className="bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold text-xs py-2 px-4 rounded-xl shadow transition-colors"
                       >
                         Cancel & Refund
@@ -219,6 +278,109 @@ export default function Dashboard() {
         )}
 
       </div>
+
+      {/* Cancellation Modal */}
+      {selectedBookingForCancel && (() => {
+        const est = getRefundEstimation(selectedBookingForCancel);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl space-y-6">
+              <div>
+                <h3 className="text-xl font-black text-slate-800 dark:text-slate-100">Cancel & Refund Request</h3>
+                <p className="text-xs text-slate-500 font-semibold mt-1">
+                  Please review the refund estimate and select your reason for cancellation.
+                </p>
+              </div>
+
+              {/* Booking Info Summary */}
+              <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 text-xs font-semibold space-y-1 text-slate-600 dark:text-slate-300">
+                <div className="flex justify-between">
+                  <span>Type:</span>
+                  <span className="text-slate-800 dark:text-slate-100 font-bold">{selectedBookingForCancel.bookingType}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Details:</span>
+                  <span className="text-slate-800 dark:text-slate-100 font-bold truncate max-w-[200px]">{selectedBookingForCancel.details}</span>
+                </div>
+                {selectedBookingForCancel.reservationDate && (
+                  <div className="flex justify-between">
+                    <span>Reservation Starts:</span>
+                    <span className="text-brand-primary font-bold">{new Date(selectedBookingForCancel.reservationDate).toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Predefined Policy Details */}
+              <div className="bg-amber-50/60 dark:bg-amber-950/10 border border-amber-200/50 dark:border-amber-900/30 p-3.5 rounded-2xl text-[11px] font-semibold text-amber-700 dark:text-amber-400 space-y-1">
+                <p className="font-bold text-amber-800 dark:text-amber-300">Refund Policy Rules:</p>
+                <ul className="list-disc pl-4 space-y-0.5">
+                  <li>More than 24 hours before reservation: 100% Refund.</li>
+                  <li>Within 24 hours of reservation: 50% Refund.</li>
+                  <li>After reservation date/time: 0% Refund.</li>
+                </ul>
+              </div>
+
+              {/* Form Input for Reason */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 block">Reason for Cancellation</label>
+                <select
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  className="w-full bg-slate-100 dark:bg-slate-800 text-xs font-semibold rounded-xl py-3 px-3 border border-slate-200 dark:border-slate-700 outline-none"
+                >
+                  <option value="Change of plans">Change of plans</option>
+                  <option value="Medical emergency">Medical emergency</option>
+                  <option value="Flight/Hotel reschedule">Flight/Hotel reschedule</option>
+                  <option value="Personal reasons">Personal reasons</option>
+                  <option value="Other">Other</option>
+                </select>
+
+                {cancelReason === 'Other' && (
+                  <textarea
+                    required
+                    value={otherReason}
+                    onChange={(e) => setOtherReason(e.target.value)}
+                    placeholder="Please specify your reason here..."
+                    className="w-full bg-slate-100 dark:bg-slate-800 text-xs font-semibold rounded-xl py-3 px-3 border border-slate-200 dark:border-slate-700 outline-none mt-2 h-20 resize-none"
+                  />
+                )}
+              </div>
+
+              {/* Refund Calculations Preview */}
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-2.5">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-xs font-bold text-slate-500">Original Paid Fare:</span>
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">₹{selectedBookingForCancel.totalPrice.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-baseline">
+                  <span className="text-xs font-bold text-slate-500">Eligibility:</span>
+                  <span className="text-xs font-bold text-brand-secondary">{est.details}</span>
+                </div>
+                <div className="flex justify-between items-baseline border-t border-dashed pt-2.5 font-black text-slate-800 dark:text-slate-100">
+                  <span>Estimated Refund:</span>
+                  <span className="text-xl text-brand-accent">₹{est.amount.toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setSelectedBookingForCancel(null)}
+                  className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-3 px-4 rounded-xl text-xs transition-colors"
+                >
+                  Keep Booking
+                </button>
+                <button
+                  onClick={confirmCancellation}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-xl text-xs shadow-md shadow-red-500/10 transition-colors"
+                >
+                  Confirm Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

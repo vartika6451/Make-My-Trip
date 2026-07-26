@@ -17,4 +17,8 @@ public class BookingDTO {
     private double totalPrice;
     private String status; // "CONFIRMED" or "CANCELLED"
     private String details;
+    private String cancellationReason;
+    private LocalDateTime cancelledAt;
+    private double refundAmount;
+    private LocalDateTime reservationDate;
 }

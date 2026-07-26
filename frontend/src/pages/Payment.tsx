@@ -17,6 +17,7 @@ export default function Payment() {
     itemName: string;
     details: string;
     totalPrice: number;
+    reservationDate?: string;
   } | null;
 
   const [method, setMethod] = useState<'wallet' | 'card' | 'upi'>('wallet');
@@ -42,6 +43,7 @@ export default function Payment() {
           itemId: bookingState.itemId,
           totalPrice: bookingState.totalPrice,
           details: bookingState.details,
+          reservationDate: bookingState.reservationDate,
         });
 
         if (res) {

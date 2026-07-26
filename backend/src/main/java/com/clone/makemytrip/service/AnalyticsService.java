@@ -59,7 +59,11 @@ public class AnalyticsService {
                 booking.getBookingDate(),
                 booking.getTotalPrice(),
                 booking.getStatus().name(),
-                booking.getDetails()
+                booking.getDetails(),
+                booking.getCancellationReason(),
+                booking.getCancelledAt(),
+                booking.getRefundAmount(),
+                booking.getReservationDate()
         );
     }
 }

@@ -36,6 +36,11 @@ public class Booking {
     private BookingStatus status;
     
     private String details; // Stores seats booked or rooms/guests count
+
+    private String cancellationReason;
+    private LocalDateTime cancelledAt;
+    private double refundAmount;
+    private LocalDateTime reservationDate;
     
     public enum BookingType {
         FLIGHT, HOTEL

@@ -65,6 +65,8 @@ public class BookingService {
         user.setWalletBalance(user.getWalletBalance() - dto.getTotalPrice());
         userRepository.save(user);
 
+        LocalDateTime reservationDate = null;
+
         if (dto.getBookingType().equalsIgnoreCase("FLIGHT")) {
             Flight flight = flightRepository.findById(dto.getItemId())
                     .orElseThrow(() -> new RuntimeException("Flight not found"));
@@ -73,6 +75,7 @@ public class BookingService {
             }
             flight.setAvailableSeats(flight.getAvailableSeats() - 1);
             flightRepository.save(flight);
+            reservationDate = flight.getDepartureTime();
         } else if (dto.getBookingType().equalsIgnoreCase("HOTEL")) {
             Hotel hotel = hotelRepository.findById(dto.getItemId())
                     .orElseThrow(() -> new RuntimeException("Hotel not found"));
@@ -81,6 +84,7 @@ public class BookingService {
             }
             hotel.setAvailableRooms(hotel.getAvailableRooms() - 1);
             hotelRepository.save(hotel);
+            reservationDate = dto.getReservationDate() != null ? dto.getReservationDate() : LocalDateTime.now().plusDays(2);
         } else {
             throw new RuntimeException("Unknown booking type");
         }
@@ -93,13 +97,14 @@ public class BookingService {
         booking.setTotalPrice(dto.getTotalPrice());
         booking.setStatus(Booking.BookingStatus.CONFIRMED);
         booking.setDetails(dto.getDetails());
+        booking.setReservationDate(reservationDate);
 
         Booking saved = bookingRepository.save(booking);
         return convertToDTO(saved);
     }
 
     @Transactional
-    public BookingDTO cancelBooking(String email, Long bookingId) {
+    public BookingDTO cancelBooking(String email, Long bookingId, String cancellationReason) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
@@ -116,10 +121,27 @@ public class BookingService {
             throw new RuntimeException("Booking is already cancelled");
         }
 
+        // Calculate refund amount based on predefined policies
+        LocalDateTime now = LocalDateTime.now();
+        double refundPercentage = 1.0; // Default 100% refund
+
+        if (booking.getReservationDate() != null) {
+            if (now.isAfter(booking.getReservationDate())) {
+                refundPercentage = 0.0; // 0% refund if cancelled after departure/check-in
+            } else {
+                long hoursRemaining = java.time.Duration.between(now, booking.getReservationDate()).toHours();
+                if (hoursRemaining < 24) {
+                    refundPercentage = 0.5; // 50% refund if cancelled within 24 hours of reservation
+                }
+            }
+        }
+
+        double refundAmount = booking.getTotalPrice() * refundPercentage;
+
         // Refund wallet balance to user who booked it
         User userWhoBooked = userRepository.findByEmail(booking.getUserEmail())
                 .orElseThrow(() -> new RuntimeException("User who booked not found"));
-        userWhoBooked.setWalletBalance(userWhoBooked.getWalletBalance() + booking.getTotalPrice());
+        userWhoBooked.setWalletBalance(userWhoBooked.getWalletBalance() + refundAmount);
         userRepository.save(userWhoBooked);
 
         if (booking.getBookingType() == Booking.BookingType.FLIGHT) {
@@ -137,6 +159,10 @@ public class BookingService {
         }
 
         booking.setStatus(Booking.BookingStatus.CANCELLED);
+        booking.setCancellationReason(cancellationReason != null ? cancellationReason : "Reason not specified");
+        booking.setCancelledAt(now);
+        booking.setRefundAmount(refundAmount);
+
         Booking saved = bookingRepository.save(booking);
         return convertToDTO(saved);
     }
@@ -150,7 +176,11 @@ public class BookingService {
                 booking.getBookingDate(),
                 booking.getTotalPrice(),
                 booking.getStatus().name(),
-                booking.getDetails()
+                booking.getDetails(),
+                booking.getCancellationReason(),
+                booking.getCancelledAt(),
+                booking.getRefundAmount(),
+                booking.getReservationDate()
         );
     }
 }

@@ -56,6 +56,10 @@ export interface Booking {
   totalPrice: number;
   status: string;
   details: string;
+  cancellationReason?: string;
+  cancelledAt?: string;
+  refundAmount?: number;
+  reservationDate?: string;
 }
 
 export interface WishlistItem {
@@ -85,7 +89,7 @@ interface BookingState {
   searchHotels: (location: string) => Promise<void>;
   fetchMyBookings: () => Promise<void>;
   createBooking: (bookingData: Partial<Booking>) => Promise<Booking | null>;
-  cancelBooking: (bookingId: number) => Promise<boolean>;
+  cancelBooking: (bookingId: number, reason?: string) => Promise<boolean>;
   fetchWishlist: () => Promise<void>;
   addToWishlist: (item: Omit<WishlistItem, 'id' | 'userEmail'>) => Promise<void>;
   removeFromWishlist: (id: number) => Promise<void>;
@@ -164,10 +168,13 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     }
   },
 
-  cancelBooking: async (bookingId) => {
+  cancelBooking: async (bookingId, reason) => {
     set({ loading: true, error: null });
     try {
-      await api.post(`/api/bookings/${bookingId}/cancel`);
+      const url = reason
+        ? `/api/bookings/${bookingId}/cancel?reason=${encodeURIComponent(reason)}`
+        : `/api/bookings/${bookingId}/cancel`;
+      await api.post(url);
       // refresh bookings
       await get().fetchMyBookings();
       set({ loading: false });

@@ -38,10 +38,13 @@ public class BookingController {
     }
 
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<BookingDTO> cancelBooking(@PathVariable Long id, Principal principal) {
+    public ResponseEntity<BookingDTO> cancelBooking(
+            @PathVariable Long id,
+            @RequestParam(required = false) String reason,
+            Principal principal) {
         if (principal == null) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(bookingService.cancelBooking(principal.getName(), id));
+        return ResponseEntity.ok(bookingService.cancelBooking(principal.getName(), id, reason));
     }
 }

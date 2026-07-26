@@ -18,6 +18,9 @@ export default function BookingFlow() {
   // Guest/Passenger Inputs
   const [passengerName, setPassengerName] = useState('');
   const [passengerAge, setPassengerAge] = useState('');
+  const [checkInDate, setCheckInDate] = useState(
+    new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  );
   
   // Seat selection states for flight
   const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
@@ -82,6 +85,8 @@ export default function BookingFlow() {
       ? `Passenger: ${passengerName} (Age: ${passengerAge}), Seat: ${selectedSeat}`
       : `Guest: ${passengerName} (Age: ${passengerAge})`;
 
+    const reservationDate = type === 'flight' ? item.departureTime : `${checkInDate}T12:00:00`;
+
     navigate('/payment', {
       state: {
         type: type === 'flight' ? 'FLIGHT' : 'HOTEL',
@@ -89,6 +94,7 @@ export default function BookingFlow() {
         itemName: type === 'flight' ? `${item.airline} ${item.flightNumber}` : item.name,
         details,
         totalPrice: finalPrice,
+        reservationDate,
       }
     });
   };
@@ -155,6 +161,19 @@ export default function BookingFlow() {
                   className="w-full bg-slate-100 dark:bg-slate-800 text-sm font-semibold rounded-2xl py-3 px-4 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-brand-primary"
                 />
               </div>
+              {type === 'hotel' && (
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-bold text-slate-500 block mb-1.5">Check-in Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={checkInDate}
+                    onChange={(e) => setCheckInDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full bg-slate-100 dark:bg-slate-800 text-sm font-semibold rounded-2xl py-3 px-4 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-brand-primary"
+                  />
+                </div>
+              )}
             </div>
           </div>
 
