@@ -18,11 +18,12 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const [summary, setSummary] = useState<SummaryData | null>(null);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'flights' | 'hotels'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'flights' | 'hotels' | 'refunds'>('analytics');
   
   // resource lists
   const [flights, setFlights] = useState<any[]>([]);
   const [hotels, setHotels] = useState<any[]>([]);
+  const [cancelledBookings, setCancelledBookings] = useState<any[]>([]);
 
   // Add flight states
   const [flightNo, setFlightNo] = useState('');
@@ -45,6 +46,7 @@ export default function AdminDashboard() {
     fetchAnalytics();
     fetchFlights();
     fetchHotels();
+    fetchCancelledBookings();
   }, [isAuthenticated, user, navigate]);
 
   const fetchAnalytics = async () => {
@@ -66,6 +68,25 @@ export default function AdminDashboard() {
       const res = await api.get('/api/hotels');
       setHotels(res.data);
     } catch (err) {}
+  };
+
+  const fetchCancelledBookings = async () => {
+    try {
+      const res = await api.get('/api/admin/bookings');
+      const cancelled = res.data.filter((b: any) => b.status === 'CANCELLED');
+      setCancelledBookings(cancelled);
+    } catch (err) {}
+  };
+
+  const handleUpdateRefundStatus = async (bookingId: number, status: 'PROCESSED' | 'COMPLETED') => {
+    try {
+      await api.put(`/api/admin/bookings/${bookingId}/refund-status?status=${status}`);
+      fetchCancelledBookings();
+      fetchAnalytics();
+      alert(`Refund status updated to ${status}!`);
+    } catch (err) {
+      alert('Failed to update refund status');
+    }
   };
 
   const handleAddFlight = async (e: React.FormEvent) => {
@@ -195,6 +216,14 @@ export default function AdminDashboard() {
           }`}
         >
           Manage Hotels
+        </button>
+        <button
+          onClick={() => setActiveTab('refunds')}
+          className={`flex items-center gap-2 font-bold py-2.5 px-5 rounded-full text-sm transition-all ${
+            activeTab === 'refunds' ? 'bg-brand-primary text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          Manage Refunds
         </button>
       </div>
 
@@ -420,6 +449,89 @@ export default function AdminDashboard() {
                 </button>
               </form>
             </div>
+          </div>
+        )}
+        {activeTab === 'refunds' && (
+          <div className="glass rounded-3xl p-6 border shadow-lg space-y-6">
+            <div>
+              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Cancelled Bookings & Refunds</h3>
+              <p className="text-xs text-slate-500 font-semibold mt-1">Review user cancellation requests and process refund states.</p>
+            </div>
+
+            {cancelledBookings.length === 0 ? (
+              <div className="text-center py-12 text-slate-500 font-bold bg-slate-50 dark:bg-slate-800/20 border rounded-2xl">
+                No cancelled bookings found.
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800">
+                <table className="w-full text-left border-collapse text-xs font-semibold">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                      <th className="p-4">User</th>
+                      <th className="p-4">Type & Details</th>
+                      <th className="p-4">Price / Refund</th>
+                      <th className="p-4">Date Cancelled</th>
+                      <th className="p-4">Reason</th>
+                      <th className="p-4">Refund Status</th>
+                      <th className="p-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {cancelledBookings.map((b) => (
+                      <tr key={b.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 text-slate-700 dark:text-slate-300">
+                        <td className="p-4 font-bold">{b.userEmail}</td>
+                        <td className="p-4">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-brand-primary block">{b.bookingType}</span>
+                          <span className="text-slate-500 text-[11px] mt-0.5 block truncate max-w-[200px]">{b.details}</span>
+                        </td>
+                        <td className="p-4">
+                          <div>Paid: ₹{b.totalPrice.toLocaleString()}</div>
+                          <div className="text-brand-accent font-bold mt-0.5">Refund: ₹{b.refundAmount.toLocaleString()}</div>
+                        </td>
+                        <td className="p-4 text-slate-500">
+                          {b.cancelledAt ? new Date(b.cancelledAt).toLocaleString() : 'N/A'}
+                        </td>
+                        <td className="p-4 max-w-[150px] truncate" title={b.cancellationReason}>
+                          {b.cancellationReason || 'N/A'}
+                        </td>
+                        <td className="p-4">
+                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${
+                            b.refundStatus === 'COMPLETED'
+                              ? 'bg-emerald-100/70 dark:bg-emerald-950/30 text-emerald-600'
+                              : b.refundStatus === 'PROCESSED'
+                              ? 'bg-blue-100/70 dark:bg-blue-950/30 text-blue-600'
+                              : 'bg-amber-100/70 dark:bg-amber-950/30 text-amber-600'
+                          }`}>
+                            {b.refundStatus || 'PENDING'}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right">
+                          {(!b.refundStatus || b.refundStatus === 'PENDING') && (
+                            <button
+                              onClick={() => handleUpdateRefundStatus(b.id, 'PROCESSED')}
+                              className="bg-brand-primary hover:bg-blue-600 text-white font-bold text-[10px] py-1.5 px-3 rounded-lg shadow-md transition-colors cursor-pointer"
+                            >
+                              Mark Processed
+                            </button>
+                          )}
+                          {b.refundStatus === 'PROCESSED' && (
+                            <button
+                              onClick={() => handleUpdateRefundStatus(b.id, 'COMPLETED')}
+                              className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] py-1.5 px-3 rounded-lg shadow-md transition-colors cursor-pointer"
+                            >
+                              Mark Completed
+                            </button>
+                          )}
+                          {b.refundStatus === 'COMPLETED' && (
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">No Action</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 

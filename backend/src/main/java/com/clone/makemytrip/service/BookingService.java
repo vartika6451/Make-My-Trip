@@ -162,7 +162,20 @@ public class BookingService {
         booking.setCancellationReason(cancellationReason != null ? cancellationReason : "Reason not specified");
         booking.setCancelledAt(now);
         booking.setRefundAmount(refundAmount);
+        booking.setRefundStatus(Booking.RefundStatus.PENDING);
 
+        Booking saved = bookingRepository.save(booking);
+        return convertToDTO(saved);
+    }
+
+    @Transactional
+    public BookingDTO updateRefundStatus(Long bookingId, Booking.RefundStatus refundStatus) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+        if (booking.getStatus() != Booking.BookingStatus.CANCELLED) {
+            throw new RuntimeException("Cannot update refund status for a non-cancelled booking");
+        }
+        booking.setRefundStatus(refundStatus);
         Booking saved = bookingRepository.save(booking);
         return convertToDTO(saved);
     }
@@ -180,7 +193,8 @@ public class BookingService {
                 booking.getCancellationReason(),
                 booking.getCancelledAt(),
                 booking.getRefundAmount(),
-                booking.getReservationDate()
+                booking.getReservationDate(),
+                booking.getRefundStatus() != null ? booking.getRefundStatus().name() : null
         );
     }
 }

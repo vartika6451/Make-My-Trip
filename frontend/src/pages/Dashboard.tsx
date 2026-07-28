@@ -178,12 +178,89 @@ export default function Dashboard() {
                     <span className="text-[10px] text-slate-400 font-bold block mt-2">Booked on: {new Date(booking.bookingDate).toLocaleString()}</span>
                     
                     {booking.status === 'CANCELLED' && (
-                      <div className="mt-4 p-3 bg-red-50/50 dark:bg-red-950/10 rounded-2xl border border-red-100/50 dark:border-red-950/30 text-[11px] font-semibold space-y-1 text-red-700 dark:text-red-400 max-w-[400px]">
-                        <div>Cancellation Reason: <span className="text-slate-700 dark:text-slate-300 font-bold">{booking.cancellationReason || 'Not specified'}</span></div>
-                        <div>Refund Credited: <span className="text-slate-700 dark:text-slate-300 font-bold">₹{booking.refundAmount?.toLocaleString() || 0}</span></div>
-                        {booking.cancelledAt && (
-                          <div>Cancelled On: <span className="text-slate-700 dark:text-slate-300 font-bold">{new Date(booking.cancelledAt).toLocaleString()}</span></div>
-                        )}
+                      <div className="space-y-4 max-w-[500px]">
+                        <div className="mt-4 p-3 bg-red-50/50 dark:bg-red-950/10 rounded-2xl border border-red-100/50 dark:border-red-950/30 text-[11px] font-semibold space-y-1 text-red-700 dark:text-red-400">
+                          <div>Cancellation Reason: <span className="text-slate-700 dark:text-slate-300 font-bold">{booking.cancellationReason || 'Not specified'}</span></div>
+                          <div>Refund Credited: <span className="text-slate-700 dark:text-slate-300 font-bold">₹{booking.refundAmount?.toLocaleString() || 0}</span></div>
+                          {booking.cancelledAt && (
+                            <div>Cancelled On: <span className="text-slate-700 dark:text-slate-300 font-bold">{new Date(booking.cancelledAt).toLocaleString()}</span></div>
+                          )}
+                        </div>
+
+                        {/* Visual Stepper */}
+                        <div className="p-5 bg-slate-50 dark:bg-slate-800/20 rounded-2xl border border-slate-100 dark:border-slate-800/80 space-y-4">
+                          <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">Refund Status Tracker</div>
+                          
+                          <div className="flex flex-col gap-4 relative pl-6 before:content-[''] before:absolute before:left-[6px] before:top-[12px] before:bottom-[12px] before:w-[2px] before:bg-slate-200 dark:before:bg-slate-700">
+                            
+                            {/* Step 1: Initiated */}
+                            <div className="flex gap-3 relative">
+                              <div className="absolute -left-[23px] top-[2px] w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 shadow-sm">
+                              </div>
+                              <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                  Refund Initiated <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-100/70 dark:bg-emerald-950/30 text-emerald-600 px-1.5 py-0.5 rounded">Initiated</span>
+                                </div>
+                                <div className="text-[10px] text-slate-400 mt-0.5">
+                                  Request received on {booking.cancelledAt ? new Date(booking.cancelledAt).toLocaleString() : 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Step 2: Processed */}
+                            <div className="flex gap-3 relative">
+                              <div className={`absolute -left-[23px] top-[2px] w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 shadow-sm ${
+                                booking.refundStatus === 'PROCESSED' || booking.refundStatus === 'COMPLETED'
+                                  ? 'bg-emerald-500'
+                                  : 'bg-slate-200 dark:bg-slate-700'
+                              }`}>
+                              </div>
+                              <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                  Refund Processed 
+                                  {(booking.refundStatus === 'PROCESSED' || booking.refundStatus === 'COMPLETED') ? (
+                                    <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-100/70 dark:bg-emerald-950/30 text-emerald-600 px-1.5 py-0.5 rounded">Processed</span>
+                                  ) : (
+                                    <span className="text-[9px] font-black uppercase tracking-wider bg-amber-100/70 dark:bg-amber-950/30 text-amber-600 px-1.5 py-0.5 rounded">In Progress</span>
+                                  )}
+                                </div>
+                                <div className="text-[10px] text-slate-400 mt-0.5">
+                                  {(booking.refundStatus === 'PROCESSED' || booking.refundStatus === 'COMPLETED') 
+                                    ? 'Approved and processed by billing team.'
+                                    : `Expected by: ${booking.cancelledAt ? new Date(new Date(booking.cancelledAt).getTime() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString() : 'N/A'}`
+                                  }
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Step 3: Completed */}
+                            <div className="flex gap-3 relative">
+                              <div className={`absolute -left-[23px] top-[2px] w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 shadow-sm ${
+                                booking.refundStatus === 'COMPLETED'
+                                  ? 'bg-emerald-500'
+                                  : 'bg-slate-200 dark:bg-slate-700'
+                              }`}>
+                              </div>
+                              <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                  Credit Completed
+                                  {booking.refundStatus === 'COMPLETED' ? (
+                                    <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-100/70 dark:bg-emerald-950/30 text-emerald-600 px-1.5 py-0.5 rounded text-[9px]">Completed</span>
+                                  ) : (
+                                    <span className="text-[9px] font-black uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">Pending</span>
+                                  )}
+                                </div>
+                                <div className="text-[10px] text-slate-400 mt-0.5">
+                                  {booking.refundStatus === 'COMPLETED' 
+                                    ? `₹${booking.refundAmount?.toLocaleString() || 0} successfully credited to your VayuWallet.`
+                                    : `Expected by: ${booking.cancelledAt ? new Date(new Date(booking.cancelledAt).getTime() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString() : 'N/A'}`
+                                  }
+                                </div>
+                              </div>
+                            </div>
+
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>

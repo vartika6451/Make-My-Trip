@@ -42,11 +42,18 @@ public class Booking {
     private double refundAmount;
     private LocalDateTime reservationDate;
     
+    @Enumerated(EnumType.STRING)
+    private RefundStatus refundStatus;
+    
     public enum BookingType {
         FLIGHT, HOTEL
     }
     
     public enum BookingStatus {
         CONFIRMED, CANCELLED
+    }
+
+    public enum RefundStatus {
+        PENDING, PROCESSED, COMPLETED
     }
 }

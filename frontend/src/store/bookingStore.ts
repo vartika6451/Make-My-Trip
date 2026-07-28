@@ -60,6 +60,7 @@ export interface Booking {
   cancelledAt?: string;
   refundAmount?: number;
   reservationDate?: string;
+  refundStatus?: 'PENDING' | 'PROCESSED' | 'COMPLETED';
 }
 
 export interface WishlistItem {

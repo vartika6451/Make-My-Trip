@@ -63,7 +63,8 @@ public class AnalyticsService {
                 booking.getCancellationReason(),
                 booking.getCancelledAt(),
                 booking.getRefundAmount(),
-                booking.getReservationDate()
+                booking.getReservationDate(),
+                booking.getRefundStatus() != null ? booking.getRefundStatus().name() : null
         );
     }
 }

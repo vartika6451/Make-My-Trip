@@ -4,11 +4,10 @@ import com.clone.makemytrip.dto.AnalyticsSummaryDTO;
 import com.clone.makemytrip.dto.BookingDTO;
 import com.clone.makemytrip.service.AnalyticsService;
 import com.clone.makemytrip.service.BookingService;
+import com.clone.makemytrip.model.Booking;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -30,5 +29,12 @@ public class AdminController {
     @GetMapping("/bookings")
     public ResponseEntity<List<BookingDTO>> getAllBookings() {
         return ResponseEntity.ok(bookingService.getAllBookings());
+    }
+
+    @PutMapping("/bookings/{id}/refund-status")
+    public ResponseEntity<BookingDTO> updateRefundStatus(
+            @PathVariable Long id,
+            @RequestParam Booking.RefundStatus status) {
+        return ResponseEntity.ok(bookingService.updateRefundStatus(id, status));
     }
 }

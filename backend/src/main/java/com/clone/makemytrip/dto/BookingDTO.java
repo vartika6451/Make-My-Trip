@@ -21,4 +21,5 @@ public class BookingDTO {
     private LocalDateTime cancelledAt;
     private double refundAmount;
     private LocalDateTime reservationDate;
+    private String refundStatus;
 }
