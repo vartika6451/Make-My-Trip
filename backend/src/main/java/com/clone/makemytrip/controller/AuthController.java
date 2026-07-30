@@ -44,4 +44,12 @@ public class AuthController {
         }
         return ResponseEntity.ok(userService.addToWallet(principal.getName(), amount));
     }
+
+    @PutMapping("/preferences")
+    public ResponseEntity<UserDTO> updatePreferences(@RequestBody java.util.Map<String, String> preferences, Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(userService.updatePreferences(principal.getName(), preferences));
+    }
 }

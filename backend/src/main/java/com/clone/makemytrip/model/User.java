@@ -34,4 +34,9 @@ public class User {
     private Role role;
     
     private double walletBalance = 1000.0; // Default wallet balance for mock payments
+
+    private String preferredSeatClass;
+    private String preferredSeatPosition;
+    private String preferredRoomType;
+    private String preferredBedType;
 }

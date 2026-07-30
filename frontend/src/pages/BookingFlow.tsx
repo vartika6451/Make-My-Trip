@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import api from '../utils/api';
-import { User, Plane, Hotel as HotelIcon } from 'lucide-react';
+import { User, Plane, Hotel as HotelIcon, Sparkles, Check, Zap, Wifi, Tv, Coffee, ShieldAlert, AlertCircle } from 'lucide-react';
 
 export default function BookingFlow() {
   const [searchParams] = useSearchParams();
   const type = searchParams.get('type');
   const id = searchParams.get('id');
 
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user, updatePreferences } = useAuthStore();
   const navigate = useNavigate();
 
   const [item, setItem] = useState<any>(null);
@@ -24,6 +24,10 @@ export default function BookingFlow() {
   
   // Seat selection states for flight
   const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
+  const [seatUpgradeCost, setSeatUpgradeCost] = useState(0);
+  const [savePreferences, setSavePreferences] = useState(false);
+  const [bookedSeats, setBookedSeats] = useState<string[]>(['2B', '2C', '4E', '5A']);
+  const [pulseSeat, setPulseSeat] = useState<string | null>(null);
 
   // Coupon promo states
   const [couponCode, setCouponCode] = useState('');
@@ -51,6 +55,111 @@ export default function BookingFlow() {
     fetchItem();
   }, [type, id, isAuthenticated, navigate]);
 
+  // Real-time seat occupancy simulation
+  useEffect(() => {
+    if (type !== 'flight') return;
+    const interval = setInterval(() => {
+      const allPossibleSeats: string[] = [];
+      for (let r = 1; r <= 6; r++) {
+        for (const c of ['A', 'B', 'C', 'D', 'E', 'F']) {
+          const s = `${r}${c}`;
+          if (s !== selectedSeat) {
+            allPossibleSeats.push(s);
+          }
+        }
+      }
+      
+      const randomSeat = allPossibleSeats[Math.floor(Math.random() * allPossibleSeats.length)];
+      setBookedSeats((prev) => {
+        const isBooked = prev.includes(randomSeat);
+        if (isBooked) {
+          return prev.filter((s) => s !== randomSeat);
+        } else {
+          return [...prev, randomSeat];
+        }
+      });
+      
+      setPulseSeat(randomSeat);
+      setTimeout(() => setPulseSeat(null), 2500);
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [type, selectedSeat]);
+
+  const getSeatClassName = (row: number) => {
+    if (row === 1) return 'First Class';
+    if (row === 2) return 'Business Class';
+    if (row === 3) return 'Premium Economy';
+    return 'Economy Class';
+  };
+
+  const getSeatUpgradeCost = (row: number) => {
+    if (row === 1) return 5999;
+    if (row === 2) return 2999;
+    if (row === 3) return 499;
+    return 0;
+  };
+
+  const getSeatAmenities = (row: number) => {
+    if (row === 1) return ['Private Cabin Suite', 'Luxury Lie-Flat Bed', 'Personal Minibar', 'Gourmet Dine-on-Demand', 'Priority VIP Lounge Access'];
+    if (row === 2) return ['Premium Recliner Flat-bed', 'Noise-Canceling Headsets', 'Premium Gourmet Meals', 'Priority Check-in & Boarding'];
+    if (row === 3) return ['4" Extra Legroom Space', 'Personal USB Port', 'Complimentary Hot Beverages & Snacks'];
+    return ['Standard Ergonomic Recliner', 'Complimentary Water Bottle', 'In-seat Power Outlet (shared)'];
+  };
+
+  const isRecommendedSeat = (seatNo: string) => {
+    if (!user) return false;
+    const row = parseInt(seatNo[0]);
+    const col = seatNo[1];
+    
+    const seatClass = row === 1 ? 'FIRST' : row === 2 ? 'BUSINESS' : row === 3 ? 'PREMIUM_ECONOMY' : 'ECONOMY';
+    const seatPosition = (col === 'A' || col === 'F') ? 'WINDOW' : (col === 'C' || col === 'D') ? 'AISLE' : 'MIDDLE';
+
+    const matchesClass = user.preferredSeatClass === seatClass;
+    const matchesPosition = user.preferredSeatPosition === seatPosition;
+    
+    return matchesClass || matchesPosition;
+  };
+
+  // Pre-select seat based on user preferences
+  useEffect(() => {
+    if (type === 'flight' && user && !selectedSeat && !loading && item) {
+      for (let r = 1; r <= 6; r++) {
+        for (const c of ['A', 'B', 'C', 'D', 'E', 'F']) {
+          const seatNo = `${r}${c}`;
+          const isBooked = bookedSeats.includes(seatNo);
+          if (!isBooked && isRecommendedSeat(seatNo)) {
+            // First check if it matches class and position
+            const row = r;
+            const col = c;
+            const seatClass = row === 1 ? 'FIRST' : row === 2 ? 'BUSINESS' : row === 3 ? 'PREMIUM_ECONOMY' : 'ECONOMY';
+            const seatPosition = (col === 'A' || col === 'F') ? 'WINDOW' : (col === 'C' || col === 'D') ? 'AISLE' : 'MIDDLE';
+            const matchesClass = user.preferredSeatClass === seatClass;
+            const matchesPosition = user.preferredSeatPosition === seatPosition;
+            if (matchesClass && matchesPosition) {
+              setSelectedSeat(seatNo);
+              setSeatUpgradeCost(getSeatUpgradeCost(r));
+              return;
+            }
+          }
+        }
+      }
+      
+      // Fallback to just position matches
+      for (let r = 1; r <= 6; r++) {
+        for (const c of ['A', 'B', 'C', 'D', 'E', 'F']) {
+          const seatNo = `${r}${c}`;
+          const isBooked = bookedSeats.includes(seatNo);
+          if (!isBooked && isRecommendedSeat(seatNo)) {
+            setSelectedSeat(seatNo);
+            setSeatUpgradeCost(getSeatUpgradeCost(r));
+            return;
+          }
+        }
+      }
+    }
+  }, [user, type, loading, item]);
+
   const handleApplyCoupon = async () => {
     setCouponError('');
     setCouponSuccess('');
@@ -68,7 +177,7 @@ export default function BookingFlow() {
     }
   };
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
     if (!passengerName.trim()) {
       alert('Please fill out the passenger/guest name');
       return;
@@ -79,10 +188,30 @@ export default function BookingFlow() {
     }
 
     const basePrice = type === 'flight' ? item.price : item.pricePerNight;
-    const finalPrice = Math.max(basePrice - discountAmount, 0);
+    const finalPrice = Math.max(basePrice + (type === 'flight' ? seatUpgradeCost : 0) - discountAmount, 0);
 
+    // Save preferences if toggle checked
+    if (type === 'flight' && selectedSeat && savePreferences) {
+      const row = parseInt(selectedSeat[0]);
+      const col = selectedSeat[1];
+      const seatClass = row === 1 ? 'FIRST' : row === 2 ? 'BUSINESS' : row === 3 ? 'PREMIUM_ECONOMY' : 'ECONOMY';
+      const seatPosition = (col === 'A' || col === 'F') ? 'WINDOW' : (col === 'C' || col === 'D') ? 'AISLE' : 'MIDDLE';
+      
+      try {
+        await updatePreferences({
+          preferredSeatClass: seatClass,
+          preferredSeatPosition: seatPosition
+        });
+      } catch (err) {
+        console.error('Failed to save travel preferences', err);
+      }
+    }
+
+    const seatDetails = type === 'flight' && selectedSeat 
+      ? `, Seat: ${selectedSeat} (${getSeatClassName(parseInt(selectedSeat[0]))})`
+      : '';
     const details = type === 'flight' 
-      ? `Passenger: ${passengerName} (Age: ${passengerAge}), Seat: ${selectedSeat}`
+      ? `Passenger: ${passengerName} (Age: ${passengerAge})${seatDetails}`
       : `Guest: ${passengerName} (Age: ${passengerAge})`;
 
     const reservationDate = type === 'flight' ? item.departureTime : `${checkInDate}T12:00:00`;
@@ -108,7 +237,7 @@ export default function BookingFlow() {
   }
 
   const basePrice = type === 'flight' ? item.price : item.pricePerNight;
-  const finalPrice = Math.max(basePrice - discountAmount, 0);
+  const finalPrice = Math.max(basePrice + (type === 'flight' ? seatUpgradeCost : 0) - discountAmount, 0);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

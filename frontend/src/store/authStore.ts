@@ -6,6 +6,10 @@ interface UserProfile {
   name: string;
   role: string;
   walletBalance: number;
+  preferredSeatClass?: string;
+  preferredSeatPosition?: string;
+  preferredRoomType?: string;
+  preferredBedType?: string;
 }
 
 interface AuthState {
@@ -20,6 +24,12 @@ interface AuthState {
   fetchProfile: () => Promise<void>;
   addWalletFunds: (amount: number) => Promise<void>;
   clearError: () => void;
+  updatePreferences: (preferences: {
+    preferredSeatClass?: string;
+    preferredSeatPosition?: string;
+    preferredRoomType?: string;
+    preferredBedType?: string;
+  }) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -104,6 +114,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (err: any) {
       set({
         error: err.response?.data?.error || 'Failed to add funds',
+        loading: false,
+      });
+    }
+  },
+
+  updatePreferences: async (preferences) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.put('/api/auth/preferences', preferences);
+      set({
+        user: response.data,
+        loading: false,
+      });
+    } catch (err: any) {
+      set({
+        error: err.response?.data?.error || 'Failed to update preferences',
         loading: false,
       });
     }

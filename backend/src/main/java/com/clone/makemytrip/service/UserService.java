@@ -71,7 +71,38 @@ public class UserService {
         return convertToDTO(saved);
     }
 
+    public UserDTO updatePreferences(String email, java.util.Map<String, String> preferences) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        if (preferences.containsKey("preferredSeatClass")) {
+            user.setPreferredSeatClass(preferences.get("preferredSeatClass"));
+        }
+        if (preferences.containsKey("preferredSeatPosition")) {
+            user.setPreferredSeatPosition(preferences.get("preferredSeatPosition"));
+        }
+        if (preferences.containsKey("preferredRoomType")) {
+            user.setPreferredRoomType(preferences.get("preferredRoomType"));
+        }
+        if (preferences.containsKey("preferredBedType")) {
+            user.setPreferredBedType(preferences.get("preferredBedType"));
+        }
+        
+        User saved = userRepository.save(user);
+        return convertToDTO(saved);
+    }
+
     private UserDTO convertToDTO(User user) {
-        return new UserDTO(user.getId(), user.getEmail(), user.getName(), user.getRole().name(), user.getWalletBalance());
+        return new UserDTO(
+            user.getId(), 
+            user.getEmail(), 
+            user.getName(), 
+            user.getRole().name(), 
+            user.getWalletBalance(),
+            user.getPreferredSeatClass(),
+            user.getPreferredSeatPosition(),
+            user.getPreferredRoomType(),
+            user.getPreferredBedType()
+        );
     }
 }

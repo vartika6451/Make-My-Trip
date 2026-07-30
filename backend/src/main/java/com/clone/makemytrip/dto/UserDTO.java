@@ -13,4 +13,8 @@ public class UserDTO {
     private String name;
     private String role;
     private double walletBalance;
+    private String preferredSeatClass;
+    private String preferredSeatPosition;
+    private String preferredRoomType;
+    private String preferredBedType;
 }
